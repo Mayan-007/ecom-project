@@ -16,5 +16,6 @@ urlpatterns = [
     path('razorpay/', razorpayView, name='razorpayview'),
     path('paymenthandler/', paymenthandler, name='paymenthandler'),
     path('paymentstatus/', successview, name='orderSuccessView'),
-    path('myorders/', myorders, name='myorders')
+    path('myorders/', myorders, name='myorders'),
+    path('search/', searchview, name='search'),
 ]

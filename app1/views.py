@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from app1.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseBadRequest
+from django.db.models import Q
 
 RAZOR_KEY_ID = 'rzp_test_pU8vcIpmq3B5Nc'
 RAZOR_KEY_SECRET = 'EQlRxTerlLDZD7qDqYWug0Gt'
@@ -242,3 +243,21 @@ def myorders(request):
             })
         return render(request, 'myorders.html', {'myorders': myOrders})
     return redirect('login')
+
+def searchview(request):
+    word = request.GET.get('search')
+    wordset = word.split(" ")
+    products = Product.objects.all()
+    searchProducts = []
+    for product in products:
+        for word in wordset:
+            if word.lower() in product.name.lower():
+                searchProducts.append(product)
+    categories = Category.objects.all()
+    for category in categories:
+        for word in wordset:
+            if word.lower() in category.name.lower():
+                products = Product.objects.filter(category_id=category)
+                for product in products:
+                    searchProducts.append(product)
+    return render(request, 'product.html', {'products': searchProducts})
