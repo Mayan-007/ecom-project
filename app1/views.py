@@ -3,7 +3,8 @@ from django.shortcuts import render, redirect
 from app1.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseBadRequest
-from django.db.models import Q
+from django.core.mail import send_mail
+import random
 
 RAZOR_KEY_ID = 'rzp_test_pU8vcIpmq3B5Nc'
 RAZOR_KEY_SECRET = 'EQlRxTerlLDZD7qDqYWug0Gt'
@@ -261,3 +262,52 @@ def searchview(request):
                 for product in products:
                     searchProducts.append(product)
     return render(request, 'product.html', {'products': searchProducts})
+
+def forgotpassword(request):
+    if request.method == 'POST':
+        print(request.POST)
+        email = request.POST['email']
+        try:
+            print("1")
+            user = User.objects.get(email=email)
+            print("12")
+            print(user)
+            otp = random.randint(1000,9999)
+            request.session['otp'] = otp
+            request.session['email'] = email
+            send_mail(
+                'Password Reset',
+                'Your OTP is ' + str(otp),
+                'mayanprajapati007@gmail.com',
+                [email],
+                fail_silently=False,
+            )
+            return redirect('resetpassword')
+        except Exception as e:
+            print(e)
+            return render(request, 'forgotpassword.html', {'error': 'Email not registered'})
+    return render(request, 'forgotpassword.html')
+
+def resetpassword(request):
+    if request.session['otp'] and request.session['email']:    
+        if request.method == 'POST':
+            otp = request.POST['otp']
+            email = request.session['email']
+            if int(otp) == request.session['otp']:
+                user = User.objects.get(email=email)
+                send_mail(
+                    'Password Reset',
+                    'Your Password is ' + user.password,
+                    'mayanprajapati007@gmail.com',
+                    [email],
+                    fail_silently=False,
+                )
+                del request.session['otp']
+                del request.session['email']
+                return redirect('login')
+            else:
+                return render(request, 'resetpassword.html', {'error': 'Invalid OTP'})
+        return render(request, 'resetpassword.html')
+    else:
+        return redirect('forgotpassword')
+
