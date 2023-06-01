@@ -18,6 +18,4 @@ urlpatterns = [
     path('paymentstatus/', successview, name='orderSuccessView'),
     path('myorders/', myorders, name='myorders'),
     path('search/', searchview, name='search'),
-    path('forgotpassword/', forgotpassword, name='forgotpassword'),
-    path('resetpassword/', resetpassword, name='resetpassword')
 ]
