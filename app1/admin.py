@@ -25,9 +25,15 @@ class orderAdmin(admin.ModelAdmin):
     list_display = ('product_id', 'product_qty', 'user_id', 'order_amount')
     list_filter = ('product_id', 'product_qty', 'user_id', 'order_amount')
     search_fields = ('product_id', 'product_qty', 'user_id', 'order_amount')
+    
+class vendorAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'password', 'address', 'phone')
+    list_filter = ('name', 'email', 'password', 'address', 'phone')
+    search_fields = ('name', 'email', 'password', 'address', 'phone')
 
 admin.site.register(Category, categoryAdmin)
 admin.site.register(Product, productAdmin)
 admin.site.register(User, userAdmin)
 admin.site.register(Contact, contactAdmin)
 admin.site.register(Order, orderAdmin)
+admin.site.register(Vendor, vendorAdmin)

@@ -13,13 +13,16 @@ client = razorpay.Client(auth=(RAZOR_KEY_ID, RAZOR_KEY_SECRET))
 # Create your views here.
 def checkSession(request):
     if request.session.has_key('user_id'):
-        return True
+        return User.objects.get(id=request.session['user_id'])
+    elif request.session.has_key('vendor_id'):
+        return Vendor.objects.get(id=request.session['vendor_id'])
+    else:
+        return False
 
 def index(request):
     categories = Category.objects.all()
-    if checkSession(request):
-        user = User.objects.get(id=request.session['user_id'])
-        return render(request, 'index.html', {'categories': categories, 'user': user})
+    user = checkSession(request)
+    if user: return render(request, 'index.html', {'categories': categories, 'user': user})
     return redirect('login')
 
 def login(request):
@@ -57,8 +60,45 @@ def register(request):
             return render(request, 'register.html', {'error': 'Something went wrong'})
     return render(request, 'register.html')
 
+def vendorLogin(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        password = request.POST['password']
+        try:
+            vendor = Vendor.objects.get(email=email)
+            if vendor.password == password:
+                request.session['vendor_id'] = vendor.id
+                return redirect('index')
+            else:
+                return render(request, 'vendor_login.html', {'error': 'Invalid Password'})
+        except:
+            return render(request, 'vendor_login.html', {'error': 'Invalid Email'})
+    return render(request, 'vendor_login.html')
+
+def vendorRegister(request):
+    if request.method == 'POST':
+        name = request.POST['username']
+        email = request.POST['email']
+        phone = request.POST['phone']
+        address = request.POST['address']
+        password = request.POST['password']
+        vendor = Vendor(name=name, email=email, phone=phone, address=address, password=password)
+        try:
+            oldVendors = Vendor.objects.filter(email=email)
+            if len(oldVendors) > 0:
+                return render(request, 'vendor_register.html', {'error': 'Email already exists'})
+            else:
+                vendor.save()
+                return redirect('vendor_login')
+        except:
+            return render(request, 'vendor_register.html', {'error': 'Something went wrong'})
+    return render(request, 'vendor_register.html')
+
 def logout(request):
-    del request.session['user_id']
+    if request.session.has_key('user_id'):
+        del request.session['user_id']
+    elif request.session.has_key('vendor_id'):
+        del request.session['vendor_id']
     return redirect('login')
 
 def allproduct(request):
@@ -174,10 +214,6 @@ def paymenthandler(request):
             payment_id = request.POST.get('razorpay_payment_id', '')
             razorpay_order_id = request.POST.get('razorpay_order_id', '')
             signature = request.POST.get('razorpay_signature', '')
-            
-            print(payment_id)
-            print(razorpay_order_id)
-            print(signature)
 
             params_dict = {
                 'razorpay_order_id': razorpay_order_id,
@@ -187,12 +223,9 @@ def paymenthandler(request):
  
             # verify the payment signature.
             result = client.utility.verify_payment_signature(params_dict)
-            
-            print("IN TRY")
             amount = int(request.session['order_amount'])*100  # Rs. 200
             # capture the payemt
             client.payment.capture(payment_id, amount)
-            print(amount)
 
             #Order Save Code
             order = Order()
@@ -214,10 +247,7 @@ def paymenthandler(request):
             del request.session['payment_method']
             # render success page on successful caputre of payment
             return redirect('orderSuccessView')
-        except Exception as e:
-            print("IN EXCEPT")
-            print(e)
-            # if there is an error while capturing payment.
+        except:
             return HttpResponseBadRequest()
     else:
        # if other than POST request is made.
@@ -246,22 +276,24 @@ def myorders(request):
     return redirect('login')
 
 def searchview(request):
-    word = request.GET.get('search')
-    wordset = word.split(" ")
-    products = Product.objects.all()
-    searchProducts = []
-    for product in products:
-        for word in wordset:
-            if word.lower() in product.name.lower():
-                searchProducts.append(product)
-    categories = Category.objects.all()
-    for category in categories:
-        for word in wordset:
-            if word.lower() in category.name.lower():
-                products = Product.objects.filter(category_id=category)
-                for product in products:
+    if checkSession(request):
+        word = request.GET.get('search')
+        wordset = word.split(" ")
+        products = Product.objects.all()
+        searchProducts = []
+        for product in products:
+            for word in wordset:
+                if word.lower() in product.name.lower():
                     searchProducts.append(product)
-    return render(request, 'product.html', {'products': searchProducts})
+        categories = Category.objects.all()
+        for category in categories:
+            for word in wordset:
+                if word.lower() in category.name.lower():
+                    products = Product.objects.filter(category_id=category)
+                    for product in products:
+                        searchProducts.append(product)
+        return render(request, 'product.html', {'products': searchProducts})
+    return redirect('login')
 
 def forgotpassword(request):
     if request.method == 'POST':
