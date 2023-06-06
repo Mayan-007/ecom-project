@@ -58,3 +58,13 @@ class Vendor(models.Model):
     
     def __str__(self):
         return self.name
+    
+class Cart(models.Model):
+    product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product_qty = models.IntegerField()
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    cart_amount = models.IntegerField()
+    cart_date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.product_id.name

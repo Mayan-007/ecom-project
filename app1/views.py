@@ -343,3 +343,44 @@ def resetpassword(request):
     else:
         return redirect('forgotpassword')
 
+def cart(request):
+    user = checkSession(request)
+    success = False
+    if user:
+        if request.method == 'POST':
+            productId = request.POST['product_id']
+            productQty = request.POST['quantity']
+            product = Product.objects.get(id=productId)
+            cart = Cart()
+            cart.product_id = product
+            cart.product_qty = int(productQty)
+            cart.user_id = user
+            cart.cart_amount = int(productQty)*int(product.price)
+            cart.save()
+            success = 'Product added to cart successfully'
+        cart = Cart.objects.filter(user_id=user)
+        cartItems = []
+        for item in cart:
+            product = Product.objects.get(id=item.product_id.id)
+            cartItems.append({
+                'productImage': product.img.url,
+                'productName': product.name,
+                'productQty': item.product_qty,
+                'productTotalPrice': item.product_qty*product.price,
+                'id': item.id,
+            })
+        if request.session.has_key('message'):
+            success = request.session['message']
+            del request.session['message']
+        if success:
+            return render(request, 'cart.html', {'cartItems': cartItems, 'success': success})
+        return render(request, 'cart.html', {'cartItems': cartItems})
+    return redirect('login')
+
+def deleteCartItem(request, id):
+    if checkSession(request):
+        cartItem = Cart.objects.get(id=id)
+        cartItem.delete()
+        request.session['message'] = 'Product deleted from cart successfully'
+        return redirect('cart')
+    return redirect('login')

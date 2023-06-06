@@ -30,6 +30,11 @@ class vendorAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'password', 'address', 'phone')
     list_filter = ('name', 'email', 'password', 'address', 'phone')
     search_fields = ('name', 'email', 'password', 'address', 'phone')
+    
+class cartAdmin(admin.ModelAdmin):
+    list_display = ('product_id', 'product_qty', 'user_id', 'cart_amount')
+    list_filter = ('product_id', 'product_qty', 'user_id', 'cart_amount')
+    search_fields = ('product_id', 'product_qty', 'user_id', 'cart_amount')
 
 admin.site.register(Category, categoryAdmin)
 admin.site.register(Product, productAdmin)
@@ -37,3 +42,4 @@ admin.site.register(User, userAdmin)
 admin.site.register(Contact, contactAdmin)
 admin.site.register(Order, orderAdmin)
 admin.site.register(Vendor, vendorAdmin)
+admin.site.register(Cart, cartAdmin)

@@ -13,19 +13,38 @@
                         <p class="card-text text-success">Rs. {{ product.price }}</p>
                         <p class="card-text text-danger">Only {{ product.quantity }} left</p>
                         {% if product.quantity > 0 %}
-                        <form method="post" action="{% url 'buynow' %}">
-                            {% csrf_token %}
-                            <input type="hidden" value="{{ product.id }}" name="product_id">
-                            <div class="row">
-                                <div class="col-3">
-                                    <input type="Number" name="quantity" value="1" min="1" max="{{ product.quantity }}"
-                                        class="form-control" required>
-                                </div>
-                                <div class="col">
-                                    <button type="submit" class="btn btn-primary">Buy Now</button>
-                                </div>
+                        <div class="row">
+                            <div class="col">
+                                <form method="post" action="{% url 'buynow' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" value="{{ product.id }}" name="product_id">
+                                    <div class="row">
+                                        <div class="col-5">
+                                            <input type="Number" name="quantity" value="1" min="1" max="{{ product.quantity }}"
+                                                class="form-control" required>
+                                        </div>
+                                        <div class="col">
+                                            <button type="submit" class="btn btn-primary">Buy Now</button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
+                            <div class="col">
+                                <form method="post" action="{% url 'cart' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" value="{{ product.id }}" name="product_id">
+                                    <div class="row">
+                                        <div class="col-5">
+                                            <input type="Number" name="quantity" value="1" min="1" max="{{ product.quantity }}"
+                                                class="form-control" required>
+                                        </div>
+                                        <div class="col">
+                                            <button type="submit" class="btn btn-primary">Add Cart</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                         {% else %}
                         <button class="btn btn-danger" disabled>Out of Stock</button>
                         {% endif %}

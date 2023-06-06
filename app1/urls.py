@@ -21,5 +21,7 @@ urlpatterns = [
     path('myorders/', myorders, name='myorders'),
     path('search/', searchview, name='search'),
     path('forgotpassword/', forgotpassword, name='forgotpassword'),
-    path('resetpassword/', resetpassword, name='resetpassword')
+    path('resetpassword/', resetpassword, name='resetpassword'),
+    path('cart/', cart, name='cart'),
+    path('deletecart/<int:id>', deleteCartItem, name='deletecart'),
 ]

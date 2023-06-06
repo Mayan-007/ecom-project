@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid bg-dark h-100">
+    <h3 class="text-white text-center pt-3 mb-0 pb-0">My Cart</h3>
+    <div class="container h-100">
+        <div class="row align-items-center justify-content-center h-100">
+            {% for cartItem in cartItems %}
+            <div class="col-md-4 my-4">
+                <div class="card">
+                    <img src="{{ cartItem.productImage }}" class="card-img-top" alt="..." style="height: 300px;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ cartItem.productName }}</h5>
+                        <p class="card-text">Quantity: {{ cartItem.productQty }}</p>
+                        <p class="card-text">Total: Rs. {{ cartItem.productTotalPrice }}</p>
+                        <a href="{% url 'deletecart' cartItem.id %}" class="btn btn-danger">Remove</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% if success %}
+<script>alert("{{ success }}")</script>{% endif %}
+{% endblock %}
