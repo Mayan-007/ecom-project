@@ -20,9 +20,13 @@ def checkSession(request):
         return False
 
 def index(request):
+    if checkSession(request): return render(request, 'index.html')
+    return redirect('login')
+
+def categories(request):
     categories = Category.objects.all()
-    user = checkSession(request)
-    if user: return render(request, 'index.html', {'categories': categories, 'user': user})
+    if checkSession(request):
+        return render(request, 'categories.html', {'categories': categories})
     return redirect('login')
 
 def login(request):
@@ -119,30 +123,9 @@ def singleproduct(request, id):
         return render(request, 'singleproduct.html', {'product': product})
     return redirect('login')
 
-def changepassword(request):
-    if checkSession(request):
-        if request.method == 'POST':
-            oldpassword = request.POST['oldpassword']
-            newpassword = request.POST['newpassword']
-            confirmpassword = request.POST['confirmpassword']
-            if newpassword != confirmpassword:
-                return render(request, 'changepassword.html', {'error': 'Password does not match'})
-            user = User.objects.get(id=request.session['user_id'])
-            try:
-                if user.password == oldpassword:
-                    user.password = newpassword
-                    user.save()
-                    return redirect('logout')
-                else:
-                    return render(request, 'changepassword.html', {'error': 'Invalid Password'})
-            except:
-                return render(request, 'changepassword.html', {'error': 'Something went wrong'})
-        return render(request, 'changepassword.html')
-    return redirect('login')
-
 def profile(request):
-    user = User.objects.get(id=request.session['user_id'])
-    if checkSession(request):
+    user = checkSession(request)
+    if user:
         return render(request, 'profile.html', {'user': user})
     if request.method == 'POST':
         name = request.POST['username']
@@ -169,22 +152,6 @@ def contactus(request):
         except:
             return render(request, 'contactus.html', {'error': 'Something went wrong'})
     return render(request, 'contactus.html')
-
-def buyNow(request):
-    if checkSession(request):
-        user = User.objects.get(id=request.session['user_id'])
-        if request.method == 'POST':
-            product = Product.objects.get(id=request.POST['product_id'])
-            quantity = int(request.POST['quantity'])
-            if product.quantity < quantity:
-                return render(request, 'singleproduct.html', {'product': product, 'error': 'Quantity not available'})
-            request.session['product_id'] = product.id
-            request.session['quantity'] = quantity
-            request.session['user_id'] = user.id
-            request.session['order_amount'] = quantity*product.price
-            request.session['payment_method'] = 'Razorpay'
-            return redirect('razorpayview')
-    return redirect('login')
 
 def razorpayView(request):
     currency = 'INR'
@@ -229,25 +196,34 @@ def paymenthandler(request):
 
             #Order Save Code
             order = Order()
-            product = Product.objects.get(id=request.session['product_id'])
             user = User.objects.get(id=request.session['user_id'])
-            order.product_id = product
-            order.product_qty = request.session['quantity']
             order.user_id = user
+            order.user_name = request.session['user_name']
+            order.user_email = request.session['user_email']
+            order.user_phone = request.session['user_phone']
+            order.shipping_address = request.session['shipping_address']
             order.order_amount = int(request.session['order_amount'])
             order.payment_method = request.session['payment_method']
             order.transaction_id = payment_id
-            
-            product.quantity = product.quantity-request.session['quantity']
-            product.save()
             order.save()
-            del request.session['product_id']
-            del request.session['quantity']
+            
+            cartItems = Cart.objects.filter(user_id=user)
+            for cartItem in cartItems:
+                cartItem.order_id = order
+                product = Product.objects.get(id=cartItem.product_id.id)
+                product.quantity = product.quantity - cartItem.product_qty
+                cartItem.save()
+            
+            del request.session['user_name']
+            del request.session['user_email']
+            del request.session['user_phone']
+            del request.session['shipping_address']
             del request.session['order_amount']
             del request.session['payment_method']
             # render success page on successful caputre of payment
             return redirect('orderSuccessView')
-        except:
+        except Exception as e:
+            print(e)
             return HttpResponseBadRequest()
     else:
        # if other than POST request is made.
@@ -264,14 +240,17 @@ def myorders(request):
         orders = Order.objects.filter(user_id=user)
         myOrders = []
         for order in orders:
-            product = Product.objects.get(id=order.product_id.id)
-            myOrders.append({
-                'productImage': product.img.url,
-                'productName': product.name,
-                'productQty': order.product_qty,
-                'orderAmount': order.order_amount,
-                'transactionId': order.transaction_id,
-            })
+            print(order.id)
+            cart = Cart.objects.filter(order_id=order.id)
+            for cartItem in cart:
+                product = Product.objects.get(id=cartItem.product_id.id)
+                myOrders.append({
+                    'productImage': product.img.url,
+                    'productName': product.name,
+                    'productQty': cartItem.product_qty,
+                    'orderAmount': order.order_amount,
+                    'transactionId': order.transaction_id,
+                })
         return render(request, 'myorders.html', {'myorders': myOrders})
     return redirect('login')
 
@@ -300,21 +279,32 @@ def forgotpassword(request):
         print(request.POST)
         email = request.POST['email']
         try:
-            print("1")
             user = User.objects.get(email=email)
-            print("12")
-            print(user)
-            otp = random.randint(1000,9999)
-            request.session['otp'] = otp
-            request.session['email'] = email
-            send_mail(
-                'Password Reset',
-                'Your OTP is ' + str(otp),
-                'mayanprajapati007@gmail.com',
-                [email],
-                fail_silently=False,
-            )
-            return redirect('resetpassword')
+            if user:
+                otp = random.randint(1000,9999)
+                request.session['otp'] = otp
+                request.session['email'] = email
+                send_mail(
+                    'Password Reset',
+                    'Your OTP is ' + str(otp),
+                    'mayanprajapati007@gmail.com',
+                    [email],
+                    fail_silently=False,
+                )
+                return redirect('resetpassword')
+            vendor = Vendor.objects.get(email=email)
+            if vendor:
+                otp = random.randint(1000,9999)
+                request.session['otp'] = otp
+                request.session['email'] = email
+                send_mail(
+                    'Password Reset',
+                    'Your OTP is ' + str(otp),
+                    'mayanprajapati007@gmail.com',
+                    [email],
+                    fail_silently=False,
+                )
+                return redirect('resetpassword')
         except Exception as e:
             print(e)
             return render(request, 'forgotpassword.html', {'error': 'Email not registered'})
@@ -355,10 +345,13 @@ def cart(request):
             cart.product_id = product
             cart.product_qty = int(productQty)
             cart.user_id = user
+            cart.order_id = None
             cart.cart_amount = int(productQty)*int(product.price)
             cart.save()
             success = 'Product added to cart successfully'
         cart = Cart.objects.filter(user_id=user)
+        if len(cart) == 0:
+            return render(request, 'cart.html', {'isEmptyCart': True})
         cartItems = []
         for item in cart:
             product = Product.objects.get(id=item.product_id.id)
@@ -383,4 +376,63 @@ def deleteCartItem(request, id):
         cartItem.delete()
         request.session['message'] = 'Product deleted from cart successfully'
         return redirect('cart')
+    return redirect('login')
+
+def addproduct(request):
+    if request.session.has_key('vendor_id'):
+        vendor = Vendor.objects.get(id=request.session['vendor_id'])
+        categories = Category.objects.all()
+        if request.method == 'POST':
+            name = request.POST['productname']
+            img = request.FILES['productimg']
+            price = request.POST['productprice']
+            quantity = request.POST['productquantity']
+            category = Category.objects.get(id=request.POST['productcategory'])
+            description = request.POST['productdescription']
+            product = Product(
+                vendor_id=vendor,
+                name=name,
+                img=img,
+                price=price,
+                category=category,
+                product_desc=description,
+                quantity=quantity,
+            )
+            product.save()
+            return render(request, 'addproduct.html', {'categories': categories, 'message': 'Product added successfully'})
+        return render(request, 'addproduct.html', {'categories': categories})
+    return redirect('vendor_login')
+
+def checkout(request):
+    user = checkSession(request)
+    if user:
+        cartItems = Cart.objects.filter(user_id=user)
+        if request.method == 'POST':
+            request.session['user_name'] = request.POST['username']
+            request.session['user_email'] = request.POST['email']
+            request.session['user_phone'] = request.POST['phone']
+            request.session['shipping_address'] = request.POST['address']
+            order_amount = 0
+            for cart in cartItems:
+                order_amount += cart.cart_amount
+            request.session['order_amount'] = order_amount
+            request.session['payment_method'] = 'Razorpay'
+            return redirect('razorpayview')
+        return render(request, 'checkout.html', {'user': user})
+    return redirect('login')
+
+def buyNow(request):
+    if checkSession(request):
+        user = User.objects.get(id=request.session['user_id'])
+        if request.method == 'POST':
+            product = Product.objects.get(id=request.POST['product_id'])
+            quantity = int(request.POST['quantity'])
+            if product.quantity < quantity:
+                return render(request, 'singleproduct.html', {'product': product, 'error': 'Quantity not available'})
+            request.session['product_id'] = product.id
+            request.session['quantity'] = quantity
+            request.session['user_id'] = user.id
+            request.session['order_amount'] = quantity*product.price
+            request.session['payment_method'] = 'Razorpay'
+            return redirect('razorpayview')
     return redirect('login')

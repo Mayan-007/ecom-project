@@ -2,10 +2,11 @@
 
 {% block content %}
 <div class="container-fluid bg-dark h-100">
+    <h1 class="text-center">{% if request.session.vendor_id %}My{% endif %} Products</h1>
     <div class="container h-100">
         <div class="row align-items-center justify-content-center h-100">
             {% for product in products %}
-            <div class="col-md-4">
+            <div class="col-md-4 my-5">
                 <div class="card">
                     <img src="{{ product.img.url }}" class="card-img-top" alt="..." style="height: 300px;">
                     <div class="card-body">

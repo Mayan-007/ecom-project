@@ -22,9 +22,9 @@ class contactAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'phone')
     
 class orderAdmin(admin.ModelAdmin):
-    list_display = ('product_id', 'product_qty', 'user_id', 'order_amount')
-    list_filter = ('product_id', 'product_qty', 'user_id', 'order_amount')
-    search_fields = ('product_id', 'product_qty', 'user_id', 'order_amount')
+    list_display = ('user_id', 'order_amount')
+    list_filter = ('user_id', 'order_amount')
+    search_fields = ('user_id', 'order_amount')
     
 class vendorAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'password', 'address', 'phone')

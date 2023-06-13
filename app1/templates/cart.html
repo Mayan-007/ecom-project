@@ -3,10 +3,13 @@
 {% block content %}
 <div class="container-fluid bg-dark h-100">
     <h3 class="text-white text-center pt-3 mb-0 pb-0">My Cart</h3>
+    {% if not isEmptyCart %}
+    <p class="text-end"><a class="btn btn-primary" href="{% url 'checkout' %}">Check Out</a></p>
+    {% endif %}
     <div class="container h-100">
         <div class="row align-items-center justify-content-center h-100">
             {% for cartItem in cartItems %}
-            <div class="col-md-4 my-4">
+            <div class="col-md-4 my-2">
                 <div class="card">
                     <img src="{{ cartItem.productImage }}" class="card-img-top" alt="..." style="height: 300px;">
                     <div class="card-body">
